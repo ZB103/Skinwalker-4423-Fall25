@@ -2,39 +2,59 @@ package main
 
 import (
 	"fmt"
-	"github.com/secsy/goftp"
+	"io"
+	"net"
+	"time"
 )
 
 const (
-	address  = "138.47.99.228" // FTP server IP
-	port     = "21"            // FTP port
-	username = "anonymous"     // FTP username
-	password = ""              // FTP password
-	path     = "/"           // directory path on FTP server
-
+	Display_Time = true
 )
 
-func main(){
-	// create FTP client configuration
-	config := goftp.Config{
-		User:            username,
-		Password:        password,
-		ActiveTransfers: true,
-		Timeout:         20 * time.Second,
+func main() {
+	host := "138.47.99.228"
+	port := "31337"
+
+	conn, err := net.Dial("tcp", host+":"+port)
+
+	if err != nil {
+		fmt.Printf("Error Connecting: %v\n", err)
 	}
 
-	// connect to the FTP server
-	client, err := goftp.DialConfig(config, address+":"+port)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer client.Close() // make sure to close connection later
+	fmt.Printf("Connected to %s. Waiting for data...\n", host)
 
-	// get directory listing from the server
-	entries, err := client.ReadDir(path)
-	if err != nil {
-		log.Fatal(err)
+	buffer := make([]byte, 1)
+	// Make slice to store all times
+	times := []string{}
+
+	//Record first time
+	readTime := time.Now()
+
+	for {
+		_, err := conn.Read(buffer)
+		if err != nil {
+			if err == io.EOF {
+				fmt.Println("\nEnd of File. Connection Closed")
+			} else {
+				fmt.Printf("\n Error Reading: %v", err)
+			}
+			break
+		}
+
+		// Calculate times
+		delay := time.Since(readTime)
+		times = append(times, delay.String())
+		// Increment Counter
+
+		// Update read time
+		readTime = time.Now()
+		if Display_Time {
+			fmt.Printf("Received: '%s' | Delay since last: %s\n", string(buffer), delay)
+		}
 	}
+	fmt.Println("----------------------------------------")
+}
+
+func map(){
 	
-	fmt.Print(entries)
 }
