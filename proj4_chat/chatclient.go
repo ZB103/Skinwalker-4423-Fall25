@@ -5,8 +5,8 @@ import (
 	"io"
 	"net"
 	"strconv"
-	"time"
 	"strings"
+	"time"
 )
 
 const (
@@ -90,6 +90,8 @@ func main() {
 
 }
 
+// This below is just decoding the binary string
+// If you have to change anyhting it may be bit type for 7 or 8
 func decode(data string) {
 
 	// Convert bytes into a string
