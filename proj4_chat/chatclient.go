@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-const (
-	Display_Time = true
-)
-
 func main() {
 	host := "138.47.99.228"
 	port := "31337"
@@ -24,6 +20,7 @@ func main() {
 	}
 
 	fmt.Printf("Connected to %s. Waiting for data...\n", host)
+	fmt.Print("Message\n\n")
 
 	buffer := make([]byte, 1)
 	// Make slice to store all times
@@ -36,23 +33,24 @@ func main() {
 		_, err := conn.Read(buffer)
 		if err == io.EOF {
 			fmt.Println("\nEnd of File. Connection Closed")
+			delay := time.Since(readTime).Seconds()
+			times = append(times, delay)
 			break
 		}
-
-		// Calculate times
+		// get times
 		delay := time.Since(readTime).Seconds()
 		times = append(times, delay)
 		// Increment Counter
 
 		// Update read time
 		readTime = time.Now()
-		if Display_Time {
-			fmt.Printf("Received: '%s' | Delay since last: %.3f seconds\n", string(buffer), delay)
-		}
+		fmt.Printf("%s", string(buffer))
 	}
 	fmt.Println("----------------------------------------")
 
-	// Get total sum of times 
+	times = times[1:]
+
+	// Get total sum of times
 	var total float64
 	for _, t := range times {
 		if t > 0 {
@@ -62,8 +60,7 @@ func main() {
 	// avg amount of time
 	avg := total / float64(len(times))
 
-	fmt.Printf("The average time is %.4f\n", avg)
-
+	// Make slice of 1's and 0's
 	bin := []int{}
 
 	// Check if delay was lower or higher than average
@@ -77,13 +74,12 @@ func main() {
 
 	bin_str := ""
 
+	// Put binary in string
 	for _, x := range bin {
 		bin_str += strconv.Itoa(x)
 	}
 
-	fmt.Println(bin_str)
-	fmt.Println(len(bin_str))
-
+	fmt.Println("\nCovert Message: ")
 	decode(bin_str)
 
 }
@@ -108,10 +104,10 @@ func decode(data string) {
 func bit_type(bit_string string) int {
 	// Checks length of string to see if divisible by 7 or 8
 	byte_len := len(bit_string)
-	if (byte_len % 7) == 0 {
-		return 7
-	} else {
+	if (byte_len % 8) == 0 {
 		return 8
+	} else {
+		return 7
 	}
 
 }
