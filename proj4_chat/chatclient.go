@@ -34,12 +34,8 @@ func main() {
 
 	for {
 		_, err := conn.Read(buffer)
-		if err != nil {
-			if err == io.EOF {
-				fmt.Println("\nEnd of File. Connection Closed")
-			} else {
-				fmt.Printf("\n Error Reading: %v", err)
-			}
+		if err == io.EOF {
+			fmt.Println("\nEnd of File. Connection Closed")
 			break
 		}
 
@@ -56,19 +52,21 @@ func main() {
 	}
 	fmt.Println("----------------------------------------")
 
+	// Get total sum of times 
 	var total float64
 	for _, t := range times {
 		if t > 0 {
 			total += t
 		}
 	}
-
+	// avg amount of time
 	avg := total / float64(len(times))
 
 	fmt.Printf("The average time is %.4f\n", avg)
 
 	bin := []int{}
 
+	// Check if delay was lower or higher than average
 	for _, x := range times {
 		if x >= avg {
 			bin = append(bin, 1)
