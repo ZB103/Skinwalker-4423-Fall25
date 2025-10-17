@@ -4,7 +4,14 @@ import (
 	"fmt"
 	"os"
 	"bufio"
+	"time"
 )
+
+//function that takes in user-provided epoch and sys time
+//and performs timelock, then returns derived code
+func runTimelock(epoch string, sysTime string) string{
+	return "1234"
+}
 
 func main(){
 	//getting the user-provided epoch
@@ -15,5 +22,12 @@ func main(){
 		panic(0)
 	}
 	
-	fmt.Print(epoch)
+	//get system time
+	sysTime := time.Now().String()
+	fmt.Println(epoch)
+	fmt.Println(sysTime)
+	
+	//calculate 4-character code
+	code := runTimelock(epoch, sysTime)
+	fmt.Println("Your code is: ", code)
 }
