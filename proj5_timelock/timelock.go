@@ -16,10 +16,6 @@ import (
 func runTimelock(epoch time.Time, sysTime time.Time) string{
 	//get time elapsed since epoch
 	timeDifference := sysTime.Sub(epoch)
-	//deal with potential daylight savings time
-	if sysTime.IsDST() {
-		fmt.Println("sysTime is in DST")
-	}
 	
 	//double encode using md5
 	hash := md5.Sum([]byte(timeDifference.String()))
@@ -60,6 +56,8 @@ func runTimelock(epoch time.Time, sysTime time.Time) string{
 	return code
 }
 
+//main function - gets epoch from user and system time from device
+//sends data to timelock function, then retrieves and prints result
 func main(){
 	//getting the user-provided epoch
 	reader := bufio.NewReader(os.Stdin)
@@ -79,8 +77,6 @@ func main(){
 	
 	//get system time
 	sysTime := time.Now().Round(time.Second).UTC()
-	fmt.Println(epoch)
-	fmt.Println(sysTime)
 	
 	//calculate 4-character code
 	code := runTimelock(epoch, sysTime)
