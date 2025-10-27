@@ -7,16 +7,16 @@ import (
 
 const sentinel = "\x00\xFF\x00\x00\xFF\x00"
 
-// I've already tried retrieving what anky gave us but its not working
-
 // command format:
 // storing a hidden message: ./Steg -s -(b or B) -o<offset> -i<interval> -w"<wrapper.file>" -h"<hidden.file>"
 // retrieving a hidden message: ./Steg -r -(b or B) -o<offset> -i<interval> -w"<wrapper.file>" > <new.file>
 
-// BYTE METHOD
+// BYTE METHOD ----------------------------------------------
 
 // store hidden data in byte mode
 func storeByteMode(wrapper []byte, hidden []byte, offset int, interval int) []byte {
+	fmt.Println("storeByteMode")
+	return []byte("0")
 	i := 0
 	for i < len(hidden) {
 		if offset >= len(wrapper) {
@@ -32,6 +32,8 @@ func storeByteMode(wrapper []byte, hidden []byte, offset int, interval int) []by
 
 // retrieve hidden data in byte mode
 func retrieveByteMode(wrapper []byte, offset int, interval int) []byte {
+	fmt.Println("retrieveByteMode")
+	return []byte("0")
 	hidden := []byte{}
 	sentinelLen := len(sentinel)
 	match := 0
@@ -58,10 +60,12 @@ func retrieveByteMode(wrapper []byte, offset int, interval int) []byte {
 	return hidden
 }
 
-// BIT MODE
+// BIT MODE ----------------------------------------------------
 
 // store hidden data in bit mode
 func storeBitMode(wrapper []byte, hidden []byte, offset int, interval int) []byte {
+	fmt.Println("storeBitMode")
+	return []byte("0")
 	for i := 0; i < len(hidden); i++ {
 		b := hidden[i]
 		for j := 0; j < 8; j++ {
@@ -83,6 +87,8 @@ func storeBitMode(wrapper []byte, hidden []byte, offset int, interval int) []byt
 
 // retrieve hidden data in bit mode
 func retrieveBitMode(wrapper []byte, offset int, interval int) []byte {
+	fmt.Println("retrieveBitMode")
+	return []byte("0")
 	hidden := []byte{}
 	const SENTINEL = "\x00\xFF\x00\x00\xFF\x00"
 	sentinelLen := len(SENTINEL)
@@ -113,37 +119,41 @@ func retrieveBitMode(wrapper []byte, offset int, interval int) []byte {
 	return hidden
 }
 
+//main - getting info from user
 func main() {
 	args := os.Args[1:]
-
-	mode := ""
-	method := ""
 	offset := 0
 	interval := 1
 	wrapperFile := ""
 	hiddenFile := ""
-
-	for _, arg := range args {
-		switch {
-		case arg == "-s":
-			mode = "s"
-		case arg == "-r":
-			mode = "r"
-		case arg == "-b":
-			method = "b"
-		case arg == "-B":
-			method = "B"
-		case len(arg) > 2 && arg[:2] == "-o":
-			fmt.Sscanf(arg, "-o%d", &offset)
-		case len(arg) > 2 && arg[:2] == "-i":
-			fmt.Sscanf(arg, "-i%d", &interval)
-		case len(arg) > 2 && arg[:2] == "-w":
-			wrapperFile = arg[2:]
-		case len(arg) > 2 && arg[:2] == "-h":
-			hiddenFile = arg[2:]
-		}
+	
+	// get offset - -o required
+	if args[2][:2] == "-o" {
+		fmt.Sscanf(args[2], "-o%d", &offset)
+	} else{
+		panic(0)
 	}
-
+	//get interval
+	if args[3][:2] == "-i" {
+		fmt.Sscanf(args[3], "-i%d", &interval)
+		//get -w, -i present
+		wrapperFile = args[4][2:]
+		//get -h if present
+		if len(args) > 5 && args[5][:2] == "-h" {
+			hiddenFile = args[5][2:]
+		}	
+	//get -w, no -i
+	} else if args[3][:2] == "-w" {
+		wrapperFile = args[3][2:]
+		//get -h if present
+		if len(args) > 4 && args[4][:2] == "-h" {
+			hiddenFile = args[4][2:]
+		}
+	}else {
+		fmt.Println("Error in reading inputs 2-5")
+		panic(0)
+	}
+	
 	// read the wrapper file
 	wrapperBytes, err := os.ReadFile(wrapperFile)
 	if err != nil {
@@ -151,47 +161,45 @@ func main() {
 		os.Exit(1)
 	}
 	var hiddenBytes []byte
-	if mode == "s" {
+	if args[0] == "-s" {
 		hiddenBytes, err = os.ReadFile(hiddenFile)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error reading hidden file: %v\n", err)
 			os.Exit(1)
 		}
-	}
-
-	if mode == "s" {
 		hiddenBytes = append(hiddenBytes, []byte(sentinel)...)
-	}
-
-	fmt.Println("Wrapper size: ", len(wrapperBytes))
-	if mode == "s" {
+		fmt.Println("Wrapper size: ", len(wrapperBytes))
 		fmt.Println("Hidden + sentinel size: ", len(hiddenBytes))
 	}
 
 	// byte check
-	if method == "B" {
+	if args[1] == "-B" {
 		// store
-		if mode == "s" {
+		if args[0] == "-s" {
 			wrapperBytes = storeByteMode(wrapperBytes, hiddenBytes, offset, interval)
 			os.Stdout.Write(wrapperBytes)
 			// get
-		} else {
+		} else if args[0] == "-r" {
 			hidden := retrieveByteMode(wrapperBytes, offset, interval)
 			os.Stdout.Write(hidden)
+		} else {
+			panic(0)
 		}
-	}
-
 	// bit check
-	if method == "b" {
+	} else if args[1] == "-b" {
 		// store
-		if mode == "s" {
+		if args[0] == "-s" {
 			wrapperBytes = storeBitMode(wrapperBytes, hiddenBytes, offset, interval)
 			os.Stdout.Write(wrapperBytes)
 			// get
-		} else {
+		} else if args[0] == "-r" {
 			hidden := retrieveBitMode(wrapperBytes, offset, interval)
 			os.Stdout.Write(hidden)
+		} else {
+			panic(0)
 		}
+	} else {
+		panic(0)
 	}
 
 }
