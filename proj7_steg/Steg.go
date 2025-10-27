@@ -15,8 +15,6 @@ const sentinel = "\x00\xFF\x00\x00\xFF\x00"
 
 // store hidden data in byte mode
 func storeByteMode(wrapper []byte, hidden []byte, offset int, interval int) []byte {
-	fmt.Println("storeByteMode")
-	return []byte("0")
 	i := 0
 	for i < len(hidden) {
 		if offset >= len(wrapper) {
@@ -27,13 +25,19 @@ func storeByteMode(wrapper []byte, hidden []byte, offset int, interval int) []by
 		offset += interval
 		i++
 	}
+	
+	i = 0
+	for i < len(sentinel) {
+		wrapper[offset] = sentinel[i]
+		offset += interval
+		i += 1
+	}
+	
 	return wrapper
 }
 
 // retrieve hidden data in byte mode
 func retrieveByteMode(wrapper []byte, offset int, interval int) []byte {
-	fmt.Println("retrieveByteMode")
-	return []byte("0")
 	hidden := []byte{}
 	sentinelLen := len(sentinel)
 	match := 0
@@ -64,8 +68,6 @@ func retrieveByteMode(wrapper []byte, offset int, interval int) []byte {
 
 // store hidden data in bit mode
 func storeBitMode(wrapper []byte, hidden []byte, offset int, interval int) []byte {
-	fmt.Println("storeBitMode")
-	return []byte("0")
 	for i := 0; i < len(hidden); i++ {
 		b := hidden[i]
 		for j := 0; j < 8; j++ {
@@ -82,40 +84,48 @@ func storeBitMode(wrapper []byte, hidden []byte, offset int, interval int) []byt
 			offset += interval
 		}
 	}
+	
+	sentinelBytes := []byte(sentinel)
+	for i := 0; i < len(sentinelBytes); i++ {
+		//clear LSB of wrapper byte
+		wrapper[offset] &= 0xFE
+		wrapper[offset] |= ((sentinelBytes[i] & 0x80) >> 7)
+		sentinelBytes[i] <<= 1
+		offset += interval
+	}
+	sentinel = string(sentinelBytes)
+	
 	return wrapper
 }
 
 // retrieve hidden data in bit mode
 func retrieveBitMode(wrapper []byte, offset int, interval int) []byte {
-	fmt.Println("retrieveBitMode")
-	return []byte("0")
 	hidden := []byte{}
-	const SENTINEL = "\x00\xFF\x00\x00\xFF\x00"
-	sentinelLen := len(SENTINEL)
 	match := 0
 
 	for offset < len(wrapper) {
 		var b byte = 0
 		for j := 0; j < 8; j++ {
-			b <<= 1
 			b |= wrapper[offset] & 0x01
+			b <<= 1
 			offset += interval
-		}
 
-		// check for sentinel match
-		if b == SENTINEL[match] {
-			match++
-			if match == sentinelLen {
-				break
+			// check for sentinel match
+			if b == sentinel[match] {
+				match++
+				if match == len(sentinel) {
+					break
+				}
+			} else {
+				if match > 0 {
+					hidden = append(hidden, sentinel[:match]...)
+					match = 0
+				}
+				hidden = append(hidden, b)
 			}
-		} else {
-			if match > 0 {
-				hidden = append(hidden, SENTINEL[:match]...)
-				match = 0
-			}
-			hidden = append(hidden, b)
 		}
 	}
+	
 	return hidden
 }
 
