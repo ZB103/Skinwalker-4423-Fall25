@@ -15,23 +15,27 @@ const sentinel = "\x00\xFF\x00\x00\xFF\x00"
 
 // store hidden data in byte mode
 func storeByteMode(wrapper []byte, hidden []byte, offset int, interval int) []byte {
-	// i := 0
-	// for i < len(hidden) {
-		// if offset >= len(wrapper) {
-			// fmt.Fprintf(os.Stderr, "Error: Wrapper file too small for hidden data.\n")
-			// os.Exit(1)
-		// }
-		// wrapper[offset] = hidden[i]
-		// offset += interval
-		// i++
-	// }
+	i := 0
+	for i < len(hidden) {
+		if offset >= len(wrapper) {
+			fmt.Fprintf(os.Stderr, "Error: Wrapper file too small for hidden data.\n")
+			os.Exit(1)
+		}
+		wrapper[offset] = hidden[i]
+		offset += interval
+		i++
+	}
 	
-	// i = 0
-	// for i < len(sentinel) {
-		// wrapper[offset] = sentinel[i]
-		// offset += interval
-		// i += 1
-	// }
+	i = 0
+	for i < len(sentinel) {
+		if offset >= len(wrapper) {
+			fmt.Fprintf(os.Stderr, "Error: Wrapper file too small for hidden data.\n")
+			os.Exit(1)
+		}
+		wrapper[offset] = sentinel[i]
+		offset += interval
+		i++
+	}
 	
 	return wrapper
 }
@@ -68,7 +72,6 @@ func retrieveByteMode(wrapper []byte, offset int, interval int) []byte {
 // store hidden data in bit mode
 func storeBitMode(wrapper []byte, hidden []byte, offset int, interval int) []byte {
 	for i := 0; i < len(hidden); i++ {
-		b := hidden[i]
 		for j := 0; j < 8; j++ {
 			if offset >= len(wrapper) {
 				fmt.Fprintf(os.Stderr, "Error: Wrapper file too small for hidden data.\n")
@@ -77,23 +80,27 @@ func storeBitMode(wrapper []byte, hidden []byte, offset int, interval int) []byt
 			// clear LSB of wrapper byte
 			wrapper[offset] &= 0xFE
 			// take MSB of hidden byte and store in LSB of wrapper
-			wrapper[offset] |= ((b & 0x80) >> 7)
+			wrapper[offset] |= ((hidden[i] & 0x80) >> 7)
 			// shift hidden byte left by 1 for next bit
-			hidden[i] <<= 1	//could result in values > 1 byte
+			hidden[i] <<= 1
 			offset += interval
 		}
 	}
 	
 	sentinelBytes := []byte(sentinel)
 	for i := 0; i < len(sentinelBytes); i++ {
-		//clear LSB of wrapper byte
-		wrapper[offset] &= 0xFE
-		wrapper[offset] |= ((sentinelBytes[i] & 0x80) >> 7)
-		sentinelBytes[i] <<= 1
-		offset += interval
-	}
-	//mySentinel = string(sentinelBytes)
-	
+		for j := 0; j < 8; j++ {
+			if offset >= len(wrapper) {
+				fmt.Fprintf(os.Stderr, "Error: Wrapper file too small for hidden data.\n")
+				os.Exit(1)
+			}
+			//clear LSB of wrapper byte
+			wrapper[offset] &= 0xFE
+			wrapper[offset] |= ((sentinelBytes[i] & 0x80) >> 7)
+			sentinelBytes[i] <<= 1
+			offset += interval
+		}
+	}	
 	return wrapper
 }
 
@@ -176,8 +183,6 @@ func main() {
 			os.Exit(1)
 		}
 		hiddenBytes = append(hiddenBytes, []byte(sentinel)...)
-		fmt.Println("Wrapper size: ", len(wrapperBytes))
-		fmt.Println("Hidden + sentinel size: ", len(hiddenBytes))
 	}
 
 	// byte check
