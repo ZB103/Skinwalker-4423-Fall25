@@ -15,23 +15,23 @@ const sentinel = "\x00\xFF\x00\x00\xFF\x00"
 
 // store hidden data in byte mode
 func storeByteMode(wrapper []byte, hidden []byte, offset int, interval int) []byte {
-	i := 0
-	for i < len(hidden) {
-		if offset >= len(wrapper) {
-			fmt.Fprintf(os.Stderr, "Error: Wrapper file too small for hidden data.\n")
-			os.Exit(1)
-		}
-		wrapper[offset] = hidden[i]
-		offset += interval
-		i++
-	}
+	// i := 0
+	// for i < len(hidden) {
+		// if offset >= len(wrapper) {
+			// fmt.Fprintf(os.Stderr, "Error: Wrapper file too small for hidden data.\n")
+			// os.Exit(1)
+		// }
+		// wrapper[offset] = hidden[i]
+		// offset += interval
+		// i++
+	// }
 	
-	i = 0
-	for i < len(sentinel) {
-		wrapper[offset] = sentinel[i]
-		offset += interval
-		i += 1
-	}
+	// i = 0
+	// for i < len(sentinel) {
+		// wrapper[offset] = sentinel[i]
+		// offset += interval
+		// i += 1
+	// }
 	
 	return wrapper
 }
@@ -39,16 +39,15 @@ func storeByteMode(wrapper []byte, hidden []byte, offset int, interval int) []by
 // retrieve hidden data in byte mode
 func retrieveByteMode(wrapper []byte, offset int, interval int) []byte {
 	hidden := []byte{}
-	sentinelLen := len(sentinel)
 	match := 0
 
-	for offset < len(wrapper) {
+	for offset + (7*interval) < len(wrapper) {
 		b := wrapper[offset]
 
 		if b == sentinel[match] {
 			match++
 			// full sentinel matched, stop reading
-			if match == sentinelLen {
+			if match == len(sentinel) {
 				break
 			}
 		} else {
@@ -78,9 +77,9 @@ func storeBitMode(wrapper []byte, hidden []byte, offset int, interval int) []byt
 			// clear LSB of wrapper byte
 			wrapper[offset] &= 0xFE
 			// take MSB of hidden byte and store in LSB of wrapper
-			wrapper[offset] |= (b & 0x80) >> 7
+			wrapper[offset] |= ((b & 0x80) >> 7)
 			// shift hidden byte left by 1 for next bit
-			b <<= 1
+			hidden[i] <<= 1	//could result in values > 1 byte
 			offset += interval
 		}
 	}
@@ -93,7 +92,7 @@ func storeBitMode(wrapper []byte, hidden []byte, offset int, interval int) []byt
 		sentinelBytes[i] <<= 1
 		offset += interval
 	}
-	sentinel = string(sentinelBytes)
+	//mySentinel = string(sentinelBytes)
 	
 	return wrapper
 }
@@ -103,29 +102,28 @@ func retrieveBitMode(wrapper []byte, offset int, interval int) []byte {
 	hidden := []byte{}
 	match := 0
 
-	for offset < len(wrapper) {
+	for offset + (7*interval) < len(wrapper) {
 		var b byte = 0
 		for j := 0; j < 8; j++ {
-			b |= wrapper[offset] & 0x01
 			b <<= 1
+			b |= (wrapper[offset] & 0x01)
 			offset += interval
+		}
 
-			// check for sentinel match
-			if b == sentinel[match] {
-				match++
-				if match == len(sentinel) {
-					break
-				}
-			} else {
-				if match > 0 {
-					hidden = append(hidden, sentinel[:match]...)
-					match = 0
-				}
-				hidden = append(hidden, b)
+		// check for sentinel match
+		if b == sentinel[match] {
+			match++
+			if match == len(sentinel) {
+				break
 			}
+		} else {
+			if match > 0 {
+				hidden = append(hidden, sentinel[:match]...)
+				match = 0
+			}
+			hidden = append(hidden, b)
 		}
 	}
-	
 	return hidden
 }
 
