@@ -7,25 +7,42 @@ import (
 )
 
 func main() {
-
-	key_file := "key"
+	// Take in plain text
 	m, err := io.ReadAll(os.Stdin)
-	k, err2 := os.ReadFile(key_file)
-	b := len(m)
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "Error reading from stdin: %v\n", err)
+		os.Exit(1)
 	}
+
+	// Read from key file
+	k, err2 := os.ReadFile("key")
 	if err2 != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "Error reading key file: %v\n", err2)
+		os.Exit(1)
 	}
 
-	result := make([]byte, b)
+	// Make lengths of key file and plain text
+	keyLen := len(k)
+	msgLen := len(m)
 
-	for i := range m {
-		result[i] = (m[i] ^ k[i%len(k)])
+	// If key is empty throw error
+	if keyLen == 0 {
+		fmt.Fprintf(os.Stderr, "Error: Key file is empty.\n")
+		os.Exit(1)
 	}
 
-	fmt.Println("XOR Result: ", result)
-	fmt.Println("As String: ", string(result))
+	// Create slice that will hold final result
+	result := make([]byte, msgLen)
 
+	// Loop that repeatidly xor's bit from key to message
+	for i := 0; i < msgLen; i++ {
+		result[i] = m[i] ^ k[i%keyLen]
+	}
+
+	// Write out the result to stdout
+	_, err = os.Stdout.Write(result)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing to stdout: %v\n", err)
+		os.Exit(1)
+	}
 }
